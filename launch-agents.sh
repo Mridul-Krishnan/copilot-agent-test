@@ -30,20 +30,29 @@ tmux new-window -t $SESSION -n "implementer" "cd $DIR && copilot --experimental"
 # Window 2: Reviewer
 tmux new-window -t $SESSION -n "reviewer" "cd $DIR && copilot --experimental"
 
+send_prompt() {
+  local target=$1
+  local msg=$2
+  # Type the message as literal text, then try multiple Enter methods
+  tmux send-keys -t "$target" -l "$msg"
+  sleep 0.5
+  tmux send-keys -t "$target" C-m
+}
+
 echo "Waiting for Planner to load..."
 wait_ready "$SESSION:planner"
-tmux send-keys -t $SESSION:planner \
-  "You are the Planner. Follow ONLY planner.instructions.md. Ignore other agent instructions." Enter
+send_prompt "$SESSION:planner" \
+  "You are the Planner. Follow ONLY planner.instructions.md. Ignore other agent instructions."
 
 echo "Waiting for Implementer to load..."
 wait_ready "$SESSION:implementer"
-tmux send-keys -t $SESSION:implementer \
-  "You are the Implementer. Follow ONLY implementer.instructions.md. Ignore other agent instructions." Enter
+send_prompt "$SESSION:implementer" \
+  "You are the Implementer. Follow ONLY implementer.instructions.md. Ignore other agent instructions."
 
 echo "Waiting for Reviewer to load..."
 wait_ready "$SESSION:reviewer"
-tmux send-keys -t $SESSION:reviewer \
-  "You are the Reviewer. Follow ONLY reviewer.instructions.md. Ignore other agent instructions." Enter
+send_prompt "$SESSION:reviewer" \
+  "You are the Reviewer. Follow ONLY reviewer.instructions.md. Ignore other agent instructions."
 
 # Attach to planner window
 tmux select-window -t $SESSION:planner
