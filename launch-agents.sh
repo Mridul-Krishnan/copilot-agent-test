@@ -3,7 +3,7 @@
 # Usage: ./launch-agents.sh
 
 SESSION="agents"
-DIR="/home/krish/copilot-test"
+DIR="~/copilot-test"
 
 # Poll tmux pane until copilot prompt appears
 wait_ready() {
