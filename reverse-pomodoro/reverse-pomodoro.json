@@ -1,0 +1,9 @@
+[
+  {
+    "timestamp": "2026-03-03T15:38:36",
+    "type": "work",
+    "planned_duration": 300,
+    "actual_duration": 14,
+    "completed": false
+  }
+]
