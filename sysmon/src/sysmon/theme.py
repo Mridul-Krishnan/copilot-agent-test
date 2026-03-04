@@ -73,6 +73,27 @@ MetricPanel ProgressBar.crit Bar {
     color: $error;
 }
 
+/* Panel border colours based on severity */
+.panels-grid > MetricPanel.ok {
+    border: round $success;
+}
+.panels-grid > MetricPanel.warn {
+    border: round $warning;
+}
+.panels-grid > MetricPanel.crit {
+    border: round $error;
+}
+
+/* Blink effect on critical metric labels */
+.crit-label {
+    text-style: bold blink;
+}
+
+/* Per-core CPU mini-bar */
+.core-bar {
+    color: $success;
+}
+
 /* Process table view */
 #proc-view {
     display: none;

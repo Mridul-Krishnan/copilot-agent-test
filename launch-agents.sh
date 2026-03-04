@@ -44,6 +44,7 @@ if [[ "$STRICT" =~ ^[Yy]$ ]]; then
 fi
 
 tmux new-session -d -s $SESSION -n "planner"     "cd $DIR && copilot --experimental --agent=planner"
+tmux set -t $SESSION focus-events off
 tmux new-window  -t $SESSION -n "implementer"    "cd $DIR && copilot --experimental --agent=implementer"
 tmux new-window  -t $SESSION -n "reviewer"       "cd $DIR && copilot --experimental --agent=reviewer"
 

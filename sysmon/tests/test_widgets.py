@@ -1,9 +1,10 @@
 """Smoke tests for sysmon widgets and app."""
 
+import re
 import pytest
 
-from sysmon.app import SysmonApp
-from sysmon.widgets import IOMetricPanel, MetricPanel, ProcessTable, _human_bytes
+from sysmon.app import SysmonApp, _SPINNER, POLL_INTERVALS
+from sysmon.widgets import CpuPanel, IOMetricPanel, MetricPanel, ProcessTable, _human_bytes, _BLOCK_CHARS
 
 
 class TestAppSmoke:
@@ -194,3 +195,215 @@ class TestMetricPanelThresholds:
             panel.value = 100.0
             await pilot.pause()
             assert bar.has_class("crit")
+
+
+class TestMetricPanelThresholdsPanelClass:
+    @pytest.mark.asyncio
+    async def test_ok_panel_class(self) -> None:
+        app = SysmonApp()
+        async with app.run_test() as pilot:
+            panel = app.query_one("#cpu", MetricPanel)
+            panel.value = 59.9
+            await pilot.pause()
+            assert panel.has_class("ok")
+            assert not panel.has_class("warn")
+            assert not panel.has_class("crit")
+
+    @pytest.mark.asyncio
+    async def test_warn_panel_class(self) -> None:
+        app = SysmonApp()
+        async with app.run_test() as pilot:
+            panel = app.query_one("#cpu", MetricPanel)
+            panel.value = 60.0
+            await pilot.pause()
+            assert panel.has_class("warn")
+            assert not panel.has_class("ok")
+            assert not panel.has_class("crit")
+
+    @pytest.mark.asyncio
+    async def test_crit_panel_class(self) -> None:
+        app = SysmonApp()
+        async with app.run_test() as pilot:
+            panel = app.query_one("#cpu", MetricPanel)
+            panel.value = 85.1
+            await pilot.pause()
+            assert panel.has_class("crit")
+            assert not panel.has_class("ok")
+            assert not panel.has_class("warn")
+
+
+class TestCritLabel:
+    @pytest.mark.asyncio
+    async def test_crit_label_added(self) -> None:
+        from textual.widgets import Label
+        app = SysmonApp()
+        async with app.run_test() as pilot:
+            panel = app.query_one("#cpu", MetricPanel)
+            lbl = panel.query_one("#lbl", Label)
+            panel.value = 85.1
+            await pilot.pause()
+            assert lbl.has_class("crit-label")
+
+    @pytest.mark.asyncio
+    async def test_crit_label_removed_warn(self) -> None:
+        from textual.widgets import Label
+        app = SysmonApp()
+        async with app.run_test() as pilot:
+            panel = app.query_one("#cpu", MetricPanel)
+            lbl = panel.query_one("#lbl", Label)
+            panel.value = 85.1
+            await pilot.pause()
+            panel.value = 60.0
+            await pilot.pause()
+            assert not lbl.has_class("crit-label")
+
+    @pytest.mark.asyncio
+    async def test_crit_label_removed_ok(self) -> None:
+        from textual.widgets import Label
+        app = SysmonApp()
+        async with app.run_test() as pilot:
+            panel = app.query_one("#cpu", MetricPanel)
+            lbl = panel.query_one("#lbl", Label)
+            panel.value = 85.1
+            await pilot.pause()
+            panel.value = 10.0
+            await pilot.pause()
+            assert not lbl.has_class("crit-label")
+
+
+class TestCpuPanel:
+    @pytest.mark.asyncio
+    async def test_cpu_panel_mounts(self) -> None:
+        from textual.widgets import Label
+        app = SysmonApp()
+        async with app.run_test() as pilot:
+            panel = app.query_one("#cpu", CpuPanel)
+            assert panel is not None
+            lbl = panel.query_one("#core-bar", Label)
+            assert lbl is not None
+
+    @pytest.mark.asyncio
+    async def test_watch_cores_normal(self) -> None:
+        from textual.widgets import Label
+        app = SysmonApp()
+        async with app.run_test() as pilot:
+            panel = app.query_one("#cpu", CpuPanel)
+            panel.cores = [0.0, 25.0, 50.0, 75.0, 100.0]
+            await pilot.pause()
+            lbl = panel.query_one("#core-bar", Label)
+            expected = "".join(
+                _BLOCK_CHARS[min(8, int(v / 100 * 8))]
+                for v in [0.0, 25.0, 50.0, 75.0, 100.0]
+            )
+            assert str(lbl.render()) == expected
+
+    @pytest.mark.asyncio
+    async def test_watch_cores_empty(self) -> None:
+        from textual.widgets import Label
+        app = SysmonApp()
+        async with app.run_test() as pilot:
+            panel = app.query_one("#cpu", CpuPanel)
+            panel.cores = []
+            await pilot.pause()
+            lbl = panel.query_one("#core-bar", Label)
+            assert str(lbl.render()) == ""
+
+    @pytest.mark.asyncio
+    async def test_watch_cores_over_100(self) -> None:
+        from textual.widgets import Label
+        app = SysmonApp()
+        async with app.run_test() as pilot:
+            panel = app.query_one("#cpu", CpuPanel)
+            panel.cores = [200.0]
+            await pilot.pause()
+            lbl = panel.query_one("#core-bar", Label)
+            assert str(lbl.render()) == "█"
+
+
+class TestSpinnerAndClock:
+    @pytest.mark.asyncio
+    async def test_spinner_in_header(self) -> None:
+        from textual.widgets import Label
+        app = SysmonApp()
+        async with app.run_test() as pilot:
+            app._refresh_stats()
+            header = app.query_one("#header-bar", Label)
+            text = str(header.render())
+            assert any(ch in text for ch in _SPINNER)
+
+    @pytest.mark.asyncio
+    async def test_spinner_wraps(self) -> None:
+        app = SysmonApp()
+        async with app.run_test() as pilot:
+            app._spinner_idx = len(_SPINNER) - 1
+            app._refresh_stats()
+            assert app._spinner_idx == len(_SPINNER)
+
+    @pytest.mark.asyncio
+    async def test_clock_in_header(self) -> None:
+        from textual.widgets import Label
+        app = SysmonApp()
+        async with app.run_test() as pilot:
+            app._refresh_stats()
+            header = app.query_one("#header-bar", Label)
+            text = str(header.render())
+            assert re.search(r"\d{2}:\d{2}:\d{2}", text)
+
+
+class TestPollingRate:
+    @pytest.mark.asyncio
+    async def test_speed_up_decrements_index(self) -> None:
+        from textual.widgets import Label
+        app = SysmonApp()
+        async with app.run_test() as pilot:
+            await pilot.press("+")
+            assert app._poll_idx == 1
+            footer = app.query_one("#footer-bar", Label)
+            assert "[0.5s]" in str(footer.render())
+
+    @pytest.mark.asyncio
+    async def test_slow_down_increments_index(self) -> None:
+        from textual.widgets import Label
+        app = SysmonApp()
+        async with app.run_test() as pilot:
+            await pilot.press("-")
+            assert app._poll_idx == 3
+            footer = app.query_one("#footer-bar", Label)
+            assert "[2s]" in str(footer.render())
+
+    @pytest.mark.asyncio
+    async def test_speed_up_clamped_at_min(self) -> None:
+        app = SysmonApp()
+        async with app.run_test() as pilot:
+            for _ in range(10):
+                await pilot.press("+")
+            assert app._poll_idx == 0
+            app._timer.stop()  # prevent fast 0.25s timer firing during teardown
+
+    @pytest.mark.asyncio
+    async def test_slow_down_clamped_at_max(self) -> None:
+        app = SysmonApp()
+        async with app.run_test() as pilot:
+            for _ in range(10):
+                await pilot.press("-")
+            assert app._poll_idx == 4
+
+    @pytest.mark.asyncio
+    async def test_update_footer_content(self) -> None:
+        from textual.widgets import Label
+        expected = ["[0.25s]", "[0.5s]", "[1s]", "[2s]", "[5s]"]
+        app = SysmonApp()
+        async with app.run_test() as pilot:
+            for idx, label in enumerate(expected):
+                app._poll_idx = idx
+                app._update_footer()
+                footer = app.query_one("#footer-bar", Label)
+                assert label in str(footer.render()), f"Expected {label} at index {idx}"
+
+    @pytest.mark.asyncio
+    async def test_on_mount_footer_shows_rate(self) -> None:
+        from textual.widgets import Label
+        app = SysmonApp()
+        async with app.run_test() as pilot:
+            footer = app.query_one("#footer-bar", Label)
+            assert "[1s]" in str(footer.render())

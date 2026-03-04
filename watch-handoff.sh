@@ -22,6 +22,9 @@ STATUS_FILE="$WORKSPACE/status.json"
 send_prompt() {
   local target=$1
   local msg=$2
+  # Bring window into focus — Copilot CLI TUI only processes input when active
+  tmux select-window -t "$target"
+  sleep 0.5
   # C-u clears any pending input without interrupting a running operation
   tmux send-keys -t "$target" C-u
   sleep 0.5

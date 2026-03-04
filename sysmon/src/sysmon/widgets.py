@@ -63,15 +63,22 @@ class MetricPanel(Widget):
             lbl = self.query_one("#lbl", Label)
             lbl.update(self._format_label())
             bar = self.query_one("#bar", ProgressBar)
-            bar.update(progress=max(0, min(new_value, 100)))
-            # Colour-code the bar based on thresholds
+            bar.animate("progress", max(0, min(new_value, 100)), duration=0.4, easing="out_cubic")
+            # Colour-code the bar and panel border based on thresholds
             bar.remove_class("ok", "warn", "crit")
+            self.remove_class("ok", "warn", "crit")
             if new_value < 60:
                 bar.add_class("ok")
+                self.add_class("ok")
+                lbl.remove_class("crit-label")
             elif new_value < 85:
                 bar.add_class("warn")
+                self.add_class("warn")
+                lbl.remove_class("crit-label")
             else:
                 bar.add_class("crit")
+                self.add_class("crit")
+                lbl.add_class("crit-label")
         except NoMatches:
             pass
 
@@ -79,6 +86,29 @@ class MetricPanel(Widget):
         try:
             spark = self.query_one("#spark", Sparkline)
             spark.data = new_history
+        except NoMatches:
+            pass
+
+
+_BLOCK_CHARS = " ▁▂▃▄▅▆▇█"
+
+
+class CpuPanel(MetricPanel):
+    """CPU MetricPanel extended with a per-core mini-bar row."""
+
+    cores: reactive[list[float]] = reactive(list, always_update=True)
+
+    def compose(self) -> ComposeResult:
+        yield from super().compose()
+        yield Label("", classes="core-bar", id="core-bar")
+
+    def watch_cores(self, new_cores: list[float]) -> None:
+        try:
+            bar_lbl = self.query_one("#core-bar", Label)
+            chars = "".join(
+                _BLOCK_CHARS[min(8, int(v / 100 * 8))] for v in new_cores
+            )
+            bar_lbl.update(chars)
         except NoMatches:
             pass
 
