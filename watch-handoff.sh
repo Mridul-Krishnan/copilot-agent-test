@@ -22,6 +22,9 @@ STATUS_FILE="$WORKSPACE/status.json"
 send_prompt() {
   local target=$1
   local msg=$2
+  # Escape to dismiss any overlay/output state, then wait for input focus
+  tmux send-keys -t "$target" Escape
+  sleep 1
   tmux send-keys -t "$target" -l "$msg"
   sleep 0.5
   tmux send-keys -t "$target" C-m
