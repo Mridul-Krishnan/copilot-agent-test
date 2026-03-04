@@ -1,6 +1,6 @@
 # Multi-Agent Workflow
 
-This project uses a 3-agent workflow. Each agent has a specific role defined in `.github/instructions/`.
+This project uses a 3-agent workflow. Each agent is a custom Copilot CLI agent defined in `.github/agents/`.
 
 ## Shared State
 
@@ -13,6 +13,6 @@ All agents communicate through `.copilot-workspace/`:
 
 ## Agents
 
-1. **Planner** — analyses requirements, asks questions, creates plans
-2. **Implementer** — writes code based on the plan
-3. **Reviewer** — tests, reviews, sends feedback
+1. **Planner** (`planner.agent.md`) — analyses requirements, asks questions, creates plans. Tools: read, search, edit.
+2. **Implementer** (`implementer.agent.md`) — writes code based on the plan. Tools: all.
+3. **Reviewer** (`reviewer.agent.md`) — runs tests, reviews, sends feedback. Tools: read, search, run_in_terminal.

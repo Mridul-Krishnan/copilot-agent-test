@@ -81,10 +81,10 @@ copilot-test/
 ├── AGENTS.md                              # Agent overview (Copilot reads this)
 ├── launch-agents.sh                       # Launches 3 agents in tmux
 ├── reset-agent-workspace.sh               # Clears workspace for a new project
-├── .github/instructions/
-│   ├── planner.instructions.md            # Planner role & rules
-│   ├── implementer.instructions.md        # Implementer role & rules
-│   └── reviewer.instructions.md           # Reviewer role & rules
+├── .github/agents/
+│   ├── planner.agent.md                   # Planner custom agent profile
+│   ├── implementer.agent.md               # Implementer custom agent profile
+│   └── reviewer.agent.md                  # Reviewer custom agent profile
 └── .copilot-workspace/                    # Shared state (agents communicate here)
     ├── status.json                        # Current phase & iteration counter
     ├── requirements.md                    # User requirements
@@ -95,11 +95,19 @@ copilot-test/
 
 ## How Agent Identity Works
 
-Each agent is a separate Copilot CLI session running in its own tmux window. Identity is set by:
+Each agent is launched using the `--agent` CLI flag, which pre-loads its custom agent profile from `.github/agents/`:
 
-1. **Instruction files** in `.github/instructions/` — Copilot CLI auto-loads these
-2. **Identity prompt** — `launch-agents.sh` auto-sends an initial message telling each agent which instruction file to follow and which to ignore
-3. **Session name** — the tmux window name labels each agent for your reference
+```bash
+copilot --experimental --agent=planner
+```
+
+Each profile (`.agent.md`) contains YAML frontmatter defining the agent's name, description, and allowed tools — so the role is set at the system level before any conversation begins. No identity prompts are needed.
+
+| Agent | Profile | Tools |
+|-------|---------|-------|
+| **Planner** | `planner.agent.md` | read, search, edit |
+| **Implementer** | `implementer.agent.md` | all |
+| **Reviewer** | `reviewer.agent.md` | read, search, run_in_terminal |
 
 ## Things to Try
 

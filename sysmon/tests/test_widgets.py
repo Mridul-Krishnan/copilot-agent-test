@@ -3,7 +3,7 @@
 import pytest
 
 from sysmon.app import SysmonApp
-from sysmon.widgets import IOMetricPanel, MetricPanel, _human_bytes
+from sysmon.widgets import IOMetricPanel, MetricPanel, ProcessTable, _human_bytes
 
 
 class TestAppSmoke:
@@ -90,3 +90,107 @@ class TestThemeToggle:
             await pilot.press("t")
             assert app._dark_mode is False
             assert app.theme == "textual-light"
+
+
+class TestProcessTable:
+    @pytest.mark.asyncio
+    async def test_refresh_empty_list(self) -> None:
+        from textual.widgets import DataTable
+        app = SysmonApp()
+        async with app.run_test() as pilot:
+            table = app.query_one("#proc-view", ProcessTable)
+            table.refresh_processes([])
+            dt = table.query_one("#proc-table", DataTable)
+            assert dt.row_count == 0
+
+    @pytest.mark.asyncio
+    async def test_refresh_valid_row(self) -> None:
+        from textual.widgets import DataTable
+        app = SysmonApp()
+        async with app.run_test() as pilot:
+            table = app.query_one("#proc-view", ProcessTable)
+            table.refresh_processes([
+                {"pid": 1, "name": "init", "cpu_percent": 0.1, "mem_percent": 0.5, "status": "running"}
+            ])
+            dt = table.query_one("#proc-table", DataTable)
+            assert dt.row_count == 1
+
+
+class TestProcessToggle:
+    @pytest.mark.asyncio
+    async def test_p_binding_toggles_views(self) -> None:
+        app = SysmonApp()
+        async with app.run_test() as pilot:
+            main_view = app.query_one("#main-view")
+            proc_view = app.query_one("#proc-view")
+            # Initial state
+            assert main_view.display is True
+            assert proc_view.display is False
+            assert app._show_processes is False
+            # After first press
+            await pilot.press("p")
+            assert main_view.display is False
+            assert proc_view.display is True
+            assert app._show_processes is True
+            # After second press — back to original
+            await pilot.press("p")
+            assert main_view.display is True
+            assert proc_view.display is False
+            assert app._show_processes is False
+
+
+class TestMetricPanelThresholds:
+    @pytest.mark.asyncio
+    async def test_ok_class(self) -> None:
+        from textual.widgets import ProgressBar
+        app = SysmonApp()
+        async with app.run_test() as pilot:
+            panel = app.query_one("#cpu", MetricPanel)
+            bar = panel.query_one("#bar", ProgressBar)
+
+            panel.value = 59.9
+            await pilot.pause()
+            assert bar.has_class("ok")
+            assert not bar.has_class("warn")
+            assert not bar.has_class("crit")
+
+            # Also check near-zero value (change from 59.9 so watcher fires)
+            panel.value = 1.0
+            await pilot.pause()
+            assert bar.has_class("ok")
+
+    @pytest.mark.asyncio
+    async def test_warn_class(self) -> None:
+        from textual.widgets import ProgressBar
+        app = SysmonApp()
+        async with app.run_test() as pilot:
+            panel = app.query_one("#cpu", MetricPanel)
+            bar = panel.query_one("#bar", ProgressBar)
+
+            panel.value = 60.0
+            await pilot.pause()
+            assert bar.has_class("warn")
+            assert not bar.has_class("ok")
+            assert not bar.has_class("crit")
+
+            panel.value = 84.9
+            await pilot.pause()
+            assert bar.has_class("warn")
+
+    @pytest.mark.asyncio
+    async def test_crit_class(self) -> None:
+        from textual.widgets import ProgressBar
+        app = SysmonApp()
+        async with app.run_test() as pilot:
+            panel = app.query_one("#cpu", MetricPanel)
+            bar = panel.query_one("#bar", ProgressBar)
+
+            panel.value = 85.1
+            await pilot.pause()
+            assert bar.has_class("crit")
+            assert not bar.has_class("ok")
+            assert not bar.has_class("warn")
+
+            panel.value = 100.0
+            await pilot.pause()
+            assert bar.has_class("crit")

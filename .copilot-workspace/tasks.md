@@ -1,61 +1,104 @@
-# Tasks — sysmon (Iteration 2 — Revision)
+# Tasks — sysmon UI Enhancement + Process List
 
-> Iteration 1 tasks are all ✅ complete. Below are revision tasks from the review.
+## Task 1 — Richer CSS in `theme.py`
+**File:** `src/sysmon/theme.py`  
+**Status:** [x] (done in iteration 1)
 
-## Task R1: Fix Collector Null Guards
-- [x] Guard `psutil.disk_io_counters()` — if it returns `None`, skip disk rate calculation, set rates to 0, and set `_prev_disk = None`
-- [x] Guard `psutil.net_io_counters()` — same pattern for network
-- [x] Clamp all computed I/O rates to `max(0.0, rate)` to handle counter rollover
-- [x] Add comment noting the module-level state assumes single-threaded usage (Textual's main thread)
-- **File:** `sysmon/src/sysmon/collector.py`
-- **Acceptance:** ✅ `collect()` guards against None counters and clamps rates
+---
 
-## Task R2: Fix Widget Exception Handling
-- [x] Import `NoMatches` from `textual.css.query`
-- [x] In `MetricPanel.watch_value`: replace `except Exception: pass` with `except NoMatches: pass`
-- [x] In `MetricPanel.watch_history`: same fix
-- [x] In `IOMetricPanel.watch_value`: same fix
-- [x] In `IOMetricPanel.watch_history`: same fix
-- **File:** `sysmon/src/sysmon/widgets.py`
-- **Acceptance:** ✅ Only `NoMatches` is caught; other exceptions propagate normally
+## Task 2 — Dynamic bar colouring in `widgets.py`
+**File:** `src/sysmon/widgets.py`  
+**Status:** [x] (done in iteration 1)
 
-## Task R3: Add `_human_bytes()` Tests
-- [x] Test `_human_bytes(0)` → `"0.0 B"`
-- [x] Test `_human_bytes(1024)` → `"1.0 KB"`
-- [x] Test `_human_bytes(1048576)` → `"1.0 MB"` (1024²)
-- [x] Test `_human_bytes(1073741824)` → `"1.0 GB"` (1024³)
-- [x] Test `_human_bytes(1099511627776)` → `"1.0 TB"` (1024⁴)
-- [x] Test `_human_bytes(-500)` → handles negative input without crash
-- [x] Test `_human_bytes(512)` → `"512.0 B"`
-- **File:** `sysmon/tests/test_widgets.py`
-- **Acceptance:** ✅ All 7 `_human_bytes` tests pass
+---
 
-## Task R4: Add IOMetricPanel Isolated Tests
-- [x] Test that `IOMetricPanel` renders with a label containing `_human_bytes` formatted output
-- [x] Test that setting `.value` updates the label
-- [x] Test that setting `.history` updates the sparkline data
-- **File:** `sysmon/tests/test_widgets.py`
-- **Acceptance:** ✅ All 3 IOMetricPanel tests pass
+## Task 3 — `collect_processes()` in `collector.py`
+**File:** `src/sysmon/collector.py`  
+**Status:** [x] (done in iteration 1)
 
-## Task R5: Add Theme Toggle Test
-- [x] Use `app.run_test()` pilot to press `t`
-- [x] Assert the app's `_dark_mode` attribute flipped
-- [x] Assert `app.theme` changed from `"textual-dark"` to `"textual-light"`
-- **File:** `sysmon/tests/test_widgets.py`
-- **Acceptance:** ✅ Theme toggle test passes
+---
 
-## Task R6: Add Collector Edge-Case Tests
-- [x] Test `cpu_total` is in range [0, 100]
-- [x] Test `swap_percent` ≥ 0
-- [x] Test that after two calls, all I/O rates are ≥ 0 (non-negative)
-- **File:** `sysmon/tests/test_collector.py`
-- **Acceptance:** ✅ All 3 edge-case tests pass
+## Task 4 — App wiring in `app.py`
+**File:** `src/sysmon/app.py`  
+**Status:** [x] (done in iteration 1)
 
-## Task R7: Fix Python Version in pyproject.toml
-- [x] Change `requires-python = ">=3.11"` to `requires-python = ">=3.10"` in `sysmon/pyproject.toml`
-- **File:** `sysmon/pyproject.toml`
-- **Acceptance:** ✅ `requires-python` matches requirements.md
+---
 
-## Task R8: Run Full Test Suite
-- [x] Run `uv run pytest -v` and confirm all tests pass (old + new)
-- **Acceptance:** ✅ 23/23 tests pass
+## Task 5 — Fix CSS selector mismatch in `theme.py`
+**File:** `src/sysmon/theme.py`  
+**Changes:**
+- Change `MetricPanel ProgressBar Bar.ok` → `MetricPanel ProgressBar.ok Bar`
+- Change `MetricPanel ProgressBar Bar.warn` → `MetricPanel ProgressBar.warn Bar`
+- Change `MetricPanel ProgressBar Bar.crit` → `MetricPanel ProgressBar.crit Bar`
+
+**Acceptance:** CSS selectors match where Python code actually sets the class (on `ProgressBar`, not inner `Bar`).
+
+**Status:** [x]
+
+---
+
+## Task 6 — Add `psutil.ZombieProcess` to except clause in `collector.py`
+**File:** `src/sysmon/collector.py`  
+**Changes:**
+- Update except tuple in `collect_processes()` from `(psutil.AccessDenied, psutil.NoSuchProcess)` to `(psutil.AccessDenied, psutil.NoSuchProcess, psutil.ZombieProcess)`.
+
+**Acceptance:** Zombie processes on Linux do not cause an unhandled exception.
+
+**Status:** [x]
+
+---
+
+## Task 7 — Tests for `collect_processes()` in `test_collector.py`
+**File:** `tests/test_collector.py`  
+**Changes:**
+- Add `TestCollectProcesses` class with:
+  - `test_returns_list_of_dicts` — real call; assert list of dicts with keys `pid, name, cpu_percent, mem_percent, status`.
+  - `test_sorted_by_cpu_descending` — mock two procs; assert descending order.
+  - `test_respects_n_limit` — mock >n procs; assert `len(result) <= n`.
+  - `test_access_denied_skipped` — mock proc raising `AccessDenied`; assert skipped.
+  - `test_no_such_process_skipped` — mock proc raising `NoSuchProcess`; assert skipped.
+  - `test_zombie_process_skipped` — mock proc raising `ZombieProcess`; assert skipped.
+
+**Acceptance:** All 6 tests pass; no live psutil calls in mocked tests.
+
+**Status:** [x]
+
+---
+
+## Task 8 — Tests for `ProcessTable` widget in `test_widgets.py`
+**File:** `tests/test_widgets.py`  
+**Changes:**
+- Add `TestProcessTable` class:
+  - `test_refresh_empty_list` — mount `ProcessTable`, call `refresh_processes([])`, assert 0 rows and no crash.
+  - `test_refresh_valid_row` — call `refresh_processes([{valid row}])`, assert 1 row.
+
+**Acceptance:** Both tests pass; `ProcessTable` renders without error in both cases.
+
+**Status:** [x]
+
+---
+
+## Task 9 — Async test for `p` key binding in `test_widgets.py`
+**File:** `tests/test_widgets.py`  
+**Changes:**
+- Add `TestProcessToggle` class:
+  - `test_p_binding_toggles_views` — verify initial state (`#main-view` visible, `#proc-view` hidden, `_show_processes == False`); press `p`; assert inverse; press `p` again; assert back to original.
+
+**Acceptance:** Test passes; `#main-view` and `#proc-view` visibility are correctly toggled.
+
+**Status:** [x]
+
+---
+
+## Task 10 — Tests for ProgressBar CSS class thresholds in `test_widgets.py`
+**File:** `tests/test_widgets.py`  
+**Changes:**
+- Add `TestMetricPanelThresholds` class:
+  - `test_ok_class` — value 0 and 59.9 → `ProgressBar` has class `ok`.
+  - `test_warn_class` — value 60 and 85 → class `warn`.
+  - `test_crit_class` — value 85.1 and 100 → class `crit`.
+
+**Acceptance:** All threshold tests pass; correct CSS class is present after `watch_value` fires.
+
+**Status:** [x]
+

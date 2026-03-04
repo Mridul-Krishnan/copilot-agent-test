@@ -102,3 +102,29 @@ def reset() -> None:
     _prev_disk = None
     _prev_net = None
     _prev_time = None
+
+
+def collect_processes(n: int = 25) -> list[dict]:
+    """Return the top-n processes by CPU usage.
+
+    Each entry is a dict with keys: pid, name, cpu_percent, mem_percent, status.
+    Permission and disappearing-process errors are silently skipped.
+    """
+    procs: list[dict] = []
+    attrs = ["pid", "name", "cpu_percent", "memory_percent", "status"]
+    for proc in psutil.process_iter(attrs):
+        try:
+            info = proc.info  # type: ignore[attr-defined]
+            procs.append(
+                {
+                    "pid": info["pid"],
+                    "name": info["name"] or "",
+                    "cpu_percent": info["cpu_percent"] or 0.0,
+                    "mem_percent": info["memory_percent"] or 0.0,
+                    "status": info["status"] or "",
+                }
+            )
+        except (psutil.AccessDenied, psutil.NoSuchProcess, psutil.ZombieProcess):
+            continue
+    procs.sort(key=lambda p: p["cpu_percent"], reverse=True)
+    return procs[:n]

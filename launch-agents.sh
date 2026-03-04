@@ -1,5 +1,5 @@
 #!/bin/bash
-# Launch 3 Copilot CLI agent sessions in tmux windows
+# Launch 3 Copilot CLI custom agent sessions in tmux windows
 # Usage: ./launch-agents.sh
 
 SESSION="agents"
@@ -24,21 +24,11 @@ echo ""
 
 # --- Helpers ---
 
-wait_ready() {
-  local target=$1
-  for i in $(seq 1 60); do
-    if tmux capture-pane -t "$target" -p 2>/dev/null | grep -qE '(›|>|copilot)'; then
-      sleep 2
-      return 0
-    fi
-    sleep 1
-  done
-  echo "Warning: timed out waiting for $target"
-}
-
 send_prompt() {
   local target=$1
   local msg=$2
+  tmux send-keys -t "$target" Escape
+  sleep 1
   tmux send-keys -t "$target" -l "$msg"
   sleep 0.5
   tmux send-keys -t "$target" C-m
@@ -48,31 +38,21 @@ send_prompt() {
 
 tmux kill-session -t $SESSION 2>/dev/null
 
-tmux new-session -d -s $SESSION -n "planner" "cd $DIR && copilot --experimental"
-tmux new-window -t $SESSION -n "implementer" "cd $DIR && copilot --experimental"
-tmux new-window -t $SESSION -n "reviewer" "cd $DIR && copilot --experimental"
-
-# --- Identity prompts ---
-
-echo "Waiting for Planner to load..."
-wait_ready "$SESSION:planner"
-send_prompt "$SESSION:planner" \
-  "You are the Planner. Follow ONLY planner.instructions.md. Ignore other agent instructions."
-
-echo "Waiting for Implementer to load..."
-wait_ready "$SESSION:implementer"
-send_prompt "$SESSION:implementer" \
-  "You are the Implementer. Follow ONLY implementer.instructions.md. Ignore other agent instructions."
-
-echo "Waiting for Reviewer to load..."
-wait_ready "$SESSION:reviewer"
-
-REVIEWER_PROMPT="You are the Reviewer. Follow ONLY reviewer.instructions.md. Ignore other agent instructions."
+REVIEWER_AGENT="reviewer"
 if [[ "$STRICT" =~ ^[Yy]$ ]]; then
-  REVIEWER_PROMPT="$REVIEWER_PROMPT Be extremely strict. Reject anything without full test coverage, error handling, and edge case consideration."
-  echo "  → Strict mode ON"
+  echo "  → Strict mode ON (sending extra instruction to reviewer)"
 fi
-send_prompt "$SESSION:reviewer" "$REVIEWER_PROMPT"
+
+tmux new-session -d -s $SESSION -n "planner"     "cd $DIR && copilot --experimental --agent=planner"
+tmux new-window  -t $SESSION -n "implementer"    "cd $DIR && copilot --experimental --agent=implementer"
+tmux new-window  -t $SESSION -n "reviewer"       "cd $DIR && copilot --experimental --agent=reviewer"
+
+# Strict mode: send extra instruction once reviewer loads
+if [[ "$STRICT" =~ ^[Yy]$ ]]; then
+  sleep 8
+  send_prompt "$SESSION:reviewer" \
+    "Be extremely strict. Reject anything without full test coverage, error handling, and edge case consideration."
+fi
 
 # --- Watcher ---
 

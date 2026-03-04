@@ -6,7 +6,7 @@ from textual.app import ComposeResult
 from textual.css.query import NoMatches
 from textual.reactive import reactive
 from textual.widget import Widget
-from textual.widgets import Label, ProgressBar, Sparkline
+from textual.widgets import DataTable, Label, ProgressBar, Sparkline
 
 
 class MetricPanel(Widget):
@@ -64,6 +64,14 @@ class MetricPanel(Widget):
             lbl.update(self._format_label())
             bar = self.query_one("#bar", ProgressBar)
             bar.update(progress=max(0, min(new_value, 100)))
+            # Colour-code the bar based on thresholds
+            bar.remove_class("ok", "warn", "crit")
+            if new_value < 60:
+                bar.add_class("ok")
+            elif new_value < 85:
+                bar.add_class("warn")
+            else:
+                bar.add_class("crit")
         except NoMatches:
             pass
 
@@ -142,3 +150,36 @@ def _human_bytes(n: float) -> str:
             return f"{n:.1f} {unit}"
         n /= 1024
     return f"{n:.1f} TB"
+
+
+class ProcessTable(Widget):
+    """A widget displaying a live process list table."""
+
+    DEFAULT_CSS = """
+    ProcessTable {
+        height: 1fr;
+    }
+    ProcessTable DataTable {
+        height: 1fr;
+    }
+    """
+
+    def compose(self) -> ComposeResult:
+        table: DataTable = DataTable(id="proc-table")
+        table.add_columns("PID", "Name", "CPU %", "MEM %", "Status")
+        yield table
+
+    def refresh_processes(self, rows: list[dict]) -> None:
+        try:
+            table = self.query_one("#proc-table", DataTable)
+            table.clear()
+            for proc in rows:
+                table.add_row(
+                    str(proc["pid"]),
+                    proc["name"],
+                    f"{proc['cpu_percent']:.1f}",
+                    f"{proc['mem_percent']:.1f}",
+                    proc["status"],
+                )
+        except NoMatches:
+            pass

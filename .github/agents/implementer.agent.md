@@ -1,5 +1,6 @@
 ---
-applyTo: "**"
+name: implementer
+description: Writes code strictly following the plan in .copilot-workspace/plan.md. Does not deviate or add unrequested features.
 ---
 
 # Role: Implementer Agent

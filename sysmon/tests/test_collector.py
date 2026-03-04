@@ -1,8 +1,12 @@
 """Unit tests for the collector module."""
 
 import time
+from unittest.mock import MagicMock, PropertyMock, patch
 
-from sysmon.collector import SystemSnapshot, collect, reset
+import psutil
+import pytest
+
+from sysmon.collector import SystemSnapshot, collect, collect_processes, reset
 
 
 class TestCollector:
@@ -57,3 +61,55 @@ class TestCollector:
         assert snap.disk_write_bytes_sec >= 0
         assert snap.net_sent_bytes_sec >= 0
         assert snap.net_recv_bytes_sec >= 0
+
+
+class TestCollectProcesses:
+    def _make_proc(self, pid: int, name: str, cpu: float, mem: float, status: str = "running") -> MagicMock:
+        proc = MagicMock()
+        proc.info = {"pid": pid, "name": name, "cpu_percent": cpu, "memory_percent": mem, "status": status}
+        return proc
+
+    def test_returns_list_of_dicts(self) -> None:
+        result = collect_processes()
+        assert isinstance(result, list)
+        for item in result:
+            assert "pid" in item
+            assert "name" in item
+            assert "cpu_percent" in item
+            assert "mem_percent" in item
+            assert "status" in item
+
+    def test_sorted_by_cpu_descending(self) -> None:
+        p1 = self._make_proc(1, "low", 5.0, 1.0)
+        p2 = self._make_proc(2, "high", 80.0, 2.0)
+        with patch("psutil.process_iter", return_value=[p1, p2]):
+            result = collect_processes()
+        assert result[0]["cpu_percent"] == 80.0
+        assert result[1]["cpu_percent"] == 5.0
+
+    def test_respects_n_limit(self) -> None:
+        procs = [self._make_proc(i, f"p{i}", float(i), 0.1) for i in range(30)]
+        with patch("psutil.process_iter", return_value=procs):
+            result = collect_processes(n=5)
+        assert len(result) <= 5
+
+    def test_access_denied_skipped(self) -> None:
+        proc = MagicMock()
+        type(proc).info = PropertyMock(side_effect=psutil.AccessDenied(pid=99))
+        with patch("psutil.process_iter", return_value=[proc]):
+            result = collect_processes()
+        assert result == []
+
+    def test_no_such_process_skipped(self) -> None:
+        proc = MagicMock()
+        type(proc).info = PropertyMock(side_effect=psutil.NoSuchProcess(pid=99))
+        with patch("psutil.process_iter", return_value=[proc]):
+            result = collect_processes()
+        assert result == []
+
+    def test_zombie_process_skipped(self) -> None:
+        proc = MagicMock()
+        type(proc).info = PropertyMock(side_effect=psutil.ZombieProcess(pid=99))
+        with patch("psutil.process_iter", return_value=[proc]):
+            result = collect_processes()
+        assert result == []

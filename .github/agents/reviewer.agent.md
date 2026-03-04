@@ -1,5 +1,7 @@
 ---
-applyTo: "**"
+name: reviewer
+description: Verifies the implementation against the plan. Runs tests and writes findings — never modifies source code.
+tools: ["read", "search", "edit", "run_in_terminal"]
 ---
 
 # Role: Reviewer Agent

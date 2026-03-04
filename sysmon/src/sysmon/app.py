@@ -10,9 +10,9 @@ from textual.binding import Binding
 from textual.containers import Container
 from textual.widgets import Label
 
-from sysmon.collector import collect
+from sysmon.collector import collect, collect_processes
 from sysmon.theme import SYSMON_CSS
-from sysmon.widgets import IOMetricPanel, MetricPanel
+from sysmon.widgets import IOMetricPanel, MetricPanel, ProcessTable
 
 HISTORY_LEN = 60
 
@@ -25,11 +25,13 @@ class SysmonApp(App):
     BINDINGS = [
         Binding("q", "quit", "Quit"),
         Binding("t", "toggle_theme", "Toggle theme"),
+        Binding("p", "toggle_processes", "Processes"),
     ]
 
     def __init__(self) -> None:
         super().__init__()
         self._dark_mode = True
+        self._show_processes: bool = False
         # 60-second history deques
         self._cpu_hist: deque[float] = deque(maxlen=HISTORY_LEN)
         self._ram_hist: deque[float] = deque(maxlen=HISTORY_LEN)
@@ -41,7 +43,7 @@ class SysmonApp(App):
 
     def compose(self) -> ComposeResult:
         yield Label("sysmon", id="header-bar")
-        with Container(classes="panels-grid"):
+        with Container(classes="panels-grid", id="main-view"):
             yield MetricPanel("CPU", "%", id="cpu")
             yield MetricPanel("RAM", "%", id="ram")
             yield MetricPanel("Swap", "%", id="swap")
@@ -49,7 +51,8 @@ class SysmonApp(App):
             yield IOMetricPanel("Disk Write", id="disk-w")
             yield IOMetricPanel("Net Send", id="net-s")
             yield IOMetricPanel("Net Recv", id="net-r")
-        yield Label("q Quit  t Theme", id="footer-bar")
+        yield ProcessTable(id="proc-view")
+        yield Label("q Quit  t Theme  p Processes", id="footer-bar")
 
     def on_mount(self) -> None:
         # Initial collection to prime psutil counters
@@ -106,6 +109,16 @@ class SysmonApp(App):
         nr = self.query_one("#net-r", IOMetricPanel)
         nr.value = snap.net_recv_bytes_sec
         nr.history = list(self._net_r_hist)
+
+        # Process table (only refresh when visible)
+        if self._show_processes:
+            rows = collect_processes()
+            self.query_one("#proc-view", ProcessTable).refresh_processes(rows)
+
+    def action_toggle_processes(self) -> None:
+        self._show_processes = not self._show_processes
+        self.query_one("#main-view").display = not self._show_processes
+        self.query_one("#proc-view").display = self._show_processes
 
     def action_toggle_theme(self) -> None:
         self._dark_mode = not self._dark_mode

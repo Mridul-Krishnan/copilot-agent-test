@@ -1,41 +1,131 @@
-# Plan — sysmon (Iteration 2 — Revision)
+# Plan — sysmon UI Enhancements + Process List View (Iteration 2)
 
-## Context
-Iteration 1 delivered a working TUI app. The Reviewer found 5 critical issues and 4 warnings. This revision focuses on fixing those issues without restructuring the working code.
+## Problem
 
-## Issues to Address (from review.md)
+The current sysmon UI is functional but visually flat. Panels have no borders, all
+sparklines are the same colour, progress bars are unstyled, and there is no way to
+inspect individual processes. The user wants:
 
-### CRITICAL Fixes
-1. **Null guard in collector.collect()** — `psutil.disk_io_counters()` and `psutil.net_io_counters()` can return `None` (VMs, containers). Lines 57-64 and 67-74 of `collector.py` will crash with `AttributeError`. Guard with `if disk is not None` / `if net is not None`, return 0 rates when counters unavailable.
+1. A more animated, visually engaging dashboard (colours, styled panels, richer header/footer).
+2. A new **`p`** key that toggles a live process-list table view (similar to how `t` toggles the theme).
 
-2. **Replace bare `except Exception: pass`** in widget watchers (widgets.py lines 60-67, 69-74, 122-127, 129-134). Import `NoMatches` from `textual.css.query` and catch only that specific exception. This prevents silent swallowing of real bugs.
+---
 
-3. **Add `_human_bytes()` unit tests** — the helper (widgets.py:137-143) has zero coverage. Test: 0 bytes, exact 1024 boundary, MB range, GB range, TB range, negative input.
+## Approach
 
-4. **Add isolated `IOMetricPanel` tests** — current tests only check DOM presence. Add tests verifying label rendering with `_human_bytes` output and sparkline data updates.
+### 1 — Richer CSS & Styling (`theme.py`)
 
-5. **Add theme toggle test** — press `t` via pilot and verify the stylesheet source actually changed.
+- Add rounded `border` to every panel (card-style look).
+- Style the header with a left-side coloured accent and the app name in bold/brighter colour.
+- Give the footer a more descriptive key-binding bar (show all three bindings).
+- Colour-code `ProgressBar` fill: green → yellow → red as value rises (via CSS classes
+  `--ok`, `--warn`, `--crit` toggled in `watch_value`).
+- Per-metric sparkline colours: distinct `color` rules for `#cpu`, `#ram`, `#swap`,
+  `#disk-r`, `#disk-w`, `#net-s`, `#net-r` sparklines.
+- Larger sparkline height (3 rows) for more visual drama.
 
-### WARNING Fixes
-6. **Add collector edge-case tests** — verify `cpu_total` ∈ [0, 100], `swap_percent` ≥ 0, I/O rates ≥ 0 (guards against counter rollover producing negatives).
+### 2 — Widget Enhancements (`widgets.py`)
 
-7. **Clamp I/O rates to ≥ 0** in `collector.collect()` — use `max(0.0, rate)` to handle counter rollover.
+- **`MetricPanel`**: In `watch_value`, dynamically add/remove CSS classes (`ok`, `warn`,
+  `crit`) on the ProgressBar so CSS can colour it.  Thresholds: < 60 % = ok, 60–85 % = warn,
+  > 85 % = crit.
+- **`IOMetricPanel`**: No structural change — just benefits from new CSS colours.
+- **New `ProcessTable` widget**: A `Widget` wrapping Textual's `DataTable`.
+  Columns: `PID`, `Name`, `CPU %`, `MEM %`, `Status`.  
+  Exposed method `refresh_processes(rows)` to update rows every tick.
 
-8. **Fix Python version mismatch** — requirements.md says >=3.10, pyproject.toml says >=3.11. Align to >=3.10 in pyproject.toml (per original requirement).
+### 3 — Process Collector (`collector.py`)
 
-### Deferred (non-blocking)
-- Widget code duplication (MetricPanel/IOMetricPanel) — noted as WARNING, not a correctness bug. Defer to future iteration.
-- Thread safety on collector globals — Textual's `set_interval` runs on the main thread; no multi-thread risk in current usage. Add a comment noting this assumption.
+- Add a `collect_processes(n=25)` helper that returns a list of dicts
+  `{pid, name, cpu_percent, mem_percent, status}` sorted by `cpu_percent` descending,
+  using `psutil.process_iter(['pid','name','cpu_percent','memory_percent','status'])`.
 
-## Files Modified
+### 4 — App wiring (`app.py`)
 
-| File | Changes |
-|------|---------|
-| `sysmon/src/sysmon/collector.py` | Null guards for disk/net counters, clamp rates ≥ 0, thread-safety comment |
-| `sysmon/src/sysmon/widgets.py` | Replace `except Exception` with `except NoMatches` |
-| `sysmon/tests/test_collector.py` | Add edge-case tests (cpu range, swap, non-negative rates) |
-| `sysmon/tests/test_widgets.py` | Add `_human_bytes` tests, `IOMetricPanel` tests, theme toggle test |
-| `sysmon/pyproject.toml` | Change `requires-python` to `>=3.10` |
-| `sysmon/.copilot-workspace/requirements.md` | No change needed (already says >=3.10) |
+- Add `Binding("p", "toggle_processes", "Processes")`.
+- Track `_show_processes: bool = False`.
+- `compose()`: yield both `Container(classes="panels-grid", id="main-view")` and
+  `ProcessTable(id="proc-view")`.  Initially hide `proc-view` via CSS `display: none`.
+- `action_toggle_processes()`: flip `_show_processes`, show/hide each view using
+  `widget.display = True/False`.
+- In `_refresh_stats()`, if `_show_processes` is True, also call
+  `collect_processes()` and call `proc_table.refresh_processes(rows)`.
+- Update footer label to include `p Processes`.
 
-## Tasks (see tasks.md for checklist)
+---
+
+## Files Changed
+
+| File | Nature of change |
+|---|---|
+| `src/sysmon/theme.py` | Rich CSS: borders, sparkline colours, bar colour classes, header/footer style |
+| `src/sysmon/widgets.py` | Dynamic CSS classes on ProgressBar; new `ProcessTable` widget |
+| `src/sysmon/collector.py` | New `collect_processes()` helper |
+| `src/sysmon/app.py` | `p` binding, view toggle logic, process refresh, footer update |
+
+---
+
+## Notes / Constraints
+
+- Textual's `DataTable` does not support in-place cell updates efficiently for many rows;
+  use `clear()` + `add_rows()` each tick (acceptable for ≤ 25 rows at 1 Hz).
+- `psutil.process_iter` with `cpu_percent` returns instantaneous values (non-blocking);
+  first call may show 0 % for all processes — that is acceptable and matches htop behaviour.
+- Keep the `t` theme toggle working as-is; CSS colour classes must work in both dark and
+  light themes (use `$` token-based colours where possible).
+
+---
+
+## Iteration 2 — Fixes from Reviewer
+
+### Fix A — CSS selector mismatch (`theme.py`)
+
+The class `ok/warn/crit` is added to the **`ProgressBar`** widget in `widgets.py`, but
+`theme.py` targets `MetricPanel ProgressBar Bar.ok` (the inner `Bar` sub-widget).
+Fix: change to `MetricPanel ProgressBar.ok Bar` (and likewise for `warn`/`crit`).
+
+### Fix B — `psutil.ZombieProcess` not caught (`collector.py`)
+
+The except clause in `collect_processes()` catches `(psutil.AccessDenied, psutil.NoSuchProcess)`.
+On Linux, zombie processes can raise `psutil.ZombieProcess` independently.
+Fix: add `psutil.ZombieProcess` to the except tuple.
+
+### Fix C — Tests for `collect_processes()` (`test_collector.py`)
+
+Add a `TestCollectProcesses` class with:
+- `test_returns_list_of_dicts` — real call returns a list of dicts with keys `pid, name, cpu_percent, mem_percent, status`.
+- `test_sorted_by_cpu_descending` — mock two procs; assert order.
+- `test_respects_n_limit` — mock >n procs; assert `len(result) <= n`.
+- `test_access_denied_skipped` — mock proc that raises `AccessDenied`; assert not in result.
+- `test_no_such_process_skipped` — mock proc that raises `NoSuchProcess`; assert not in result.
+- `test_zombie_process_skipped` — mock proc that raises `ZombieProcess`; assert not in result.
+
+### Fix D — Tests for `ProcessTable` widget (`test_widgets.py`)
+
+Add a `TestProcessTable` class with:
+- `test_refresh_empty_list` — mount `ProcessTable`, call `refresh_processes([])`, assert no crash and table has 0 rows.
+- `test_refresh_valid_row` — call `refresh_processes([{valid row}])`, assert table has 1 row.
+
+### Fix E — Async test for `p` binding / `action_toggle_processes()` (`test_widgets.py`)
+
+Add a `TestProcessToggle` class with:
+- `test_p_binding_toggles_views` — before press: `#main-view` visible, `#proc-view` hidden, `_show_processes == False`; after one `p` press: inverse; after second `p` press: back to original.
+
+### Fix F — Test for ProgressBar CSS class thresholds (`test_widgets.py`)
+
+Add a `TestMetricPanelThresholds` class with:
+- `test_ok_class` — set `value = 0` (and 59.9), assert `ProgressBar` has class `ok`, not `warn`/`crit`.
+- `test_warn_class` — set `value = 60` (and 85), assert class `warn`.
+- `test_crit_class` — set `value = 85.1` (and 100), assert class `crit`.
+
+---
+
+## Files Changed (Iteration 2)
+
+| File | Nature of change |
+|---|---|
+| `src/sysmon/theme.py` | Fix CSS selectors: `ProgressBar Bar.ok` → `ProgressBar.ok Bar` (and warn/crit) |
+| `src/sysmon/collector.py` | Add `psutil.ZombieProcess` to except clause in `collect_processes()` |
+| `tests/test_collector.py` | Add `TestCollectProcesses` class with 6 tests |
+| `tests/test_widgets.py` | Add `TestProcessTable`, `TestProcessToggle`, `TestMetricPanelThresholds` classes |
+

@@ -11,7 +11,7 @@ Screen {
 #header-bar {
     dock: top;
     height: 1;
-    background: $primary;
+    background: $primary-darken-2;
     color: $text;
     text-style: bold;
     padding: 0 1;
@@ -19,7 +19,7 @@ Screen {
 #footer-bar {
     dock: bottom;
     height: 1;
-    background: $primary;
+    background: $primary-darken-2;
     color: $text;
     padding: 0 1;
 }
@@ -29,10 +29,53 @@ Screen {
     grid-gutter: 1;
     padding: 1;
 }
+.panels-grid > * {
+    border: round $primary;
+}
 MetricPanel Sparkline {
-    height: 2;
+    height: 3;
 }
 IOMetricPanel Sparkline {
-    height: 2;
+    height: 3;
+}
+
+/* Per-metric sparkline colours */
+#cpu Sparkline {
+    color: $success;
+}
+#ram Sparkline {
+    color: $warning;
+}
+#swap Sparkline {
+    color: $warning-darken-1;
+}
+#disk-r Sparkline {
+    color: $accent;
+}
+#disk-w Sparkline {
+    color: $accent-darken-1;
+}
+#net-s Sparkline {
+    color: $secondary;
+}
+#net-r Sparkline {
+    color: $secondary-darken-1;
+}
+
+/* Progress bar colour classes */
+MetricPanel ProgressBar.ok Bar {
+    color: $success;
+}
+MetricPanel ProgressBar.warn Bar {
+    color: $warning;
+}
+MetricPanel ProgressBar.crit Bar {
+    color: $error;
+}
+
+/* Process table view */
+#proc-view {
+    display: none;
+    padding: 1;
 }
 """
