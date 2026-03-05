@@ -3,7 +3,9 @@ name = "reverse-pomodoro"
 version = "0.1.0"
 description = "A reverse Pomodoro timer CLI — start small, build momentum"
 requires-python = ">=3.10"
-dependencies = []
+dependencies = [
+    "pyside6>=6.10.2",
+]
 
 [project.scripts]
 reverse-pomodoro = "reverse_pomodoro.cli:main"

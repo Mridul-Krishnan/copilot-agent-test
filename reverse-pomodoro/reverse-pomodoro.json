@@ -19,5 +19,166 @@
     "planned_duration": 300,
     "actual_duration": 3,
     "completed": false
+  },
+  {
+    "timestamp": "2026-03-05T10:49:27",
+    "type": "work",
+    "planned_duration": 300,
+    "actual_duration": 300,
+    "completed": true
+  },
+  {
+    "timestamp": "2026-03-05T10:58:26",
+    "type": "break",
+    "planned_duration": 300,
+    "actual_duration": 300,
+    "completed": true
+  },
+  {
+    "timestamp": "2026-03-05T13:49:26",
+    "type": "work",
+    "planned_duration": 600,
+    "actual_duration": 4,
+    "completed": false
+  },
+  {
+    "timestamp": "2026-03-05T14:29:02",
+    "type": "work",
+    "planned_duration": 600,
+    "actual_duration": 7,
+    "completed": false
+  },
+  {
+    "timestamp": "2026-03-05T14:29:14",
+    "type": "work",
+    "planned_duration": 600,
+    "actual_duration": 24,
+    "completed": false
+  },
+  {
+    "timestamp": "2026-03-05T14:29:44",
+    "type": "work",
+    "planned_duration": 600,
+    "actual_duration": 7,
+    "completed": false
+  },
+  {
+    "timestamp": "2026-03-05T14:29:55",
+    "type": "work",
+    "planned_duration": 600,
+    "actual_duration": 4,
+    "completed": false
+  },
+  {
+    "timestamp": "2026-03-05T14:30:26",
+    "type": "work",
+    "planned_duration": 600,
+    "actual_duration": 13,
+    "completed": false
+  },
+  {
+    "timestamp": "2026-03-05T15:30:03",
+    "type": "work",
+    "planned_duration": 600,
+    "actual_duration": 32,
+    "completed": false
+  },
+  {
+    "timestamp": "2026-03-05T15:30:44",
+    "type": "work",
+    "planned_duration": 600,
+    "actual_duration": 8,
+    "completed": true
+  },
+  {
+    "timestamp": "2026-03-05T15:30:56",
+    "type": "break",
+    "planned_duration": 300,
+    "actual_duration": 55,
+    "completed": false
+  },
+  {
+    "timestamp": "2026-03-05T15:35:27",
+    "type": "work",
+    "planned_duration": 900,
+    "actual_duration": 7,
+    "completed": false
+  },
+  {
+    "timestamp": "2026-03-05T15:35:38",
+    "type": "work",
+    "planned_duration": 900,
+    "actual_duration": 3,
+    "completed": true
+  },
+  {
+    "timestamp": "2026-03-05T15:35:47",
+    "type": "work",
+    "planned_duration": 1200,
+    "actual_duration": 6,
+    "completed": true
+  },
+  {
+    "timestamp": "2026-03-05T15:35:58",
+    "type": "break",
+    "planned_duration": 300,
+    "actual_duration": 23,
+    "completed": false
+  },
+  {
+    "timestamp": "2026-03-05T15:59:03",
+    "type": "work",
+    "planned_duration": 1500,
+    "actual_duration": 36,
+    "completed": false
+  },
+  {
+    "timestamp": "2026-03-05T15:59:39",
+    "type": "work",
+    "planned_duration": 1500,
+    "actual_duration": 6,
+    "completed": false
+  },
+  {
+    "timestamp": "2026-03-05T15:59:52",
+    "type": "work",
+    "planned_duration": 300,
+    "actual_duration": 5,
+    "completed": true
+  },
+  {
+    "timestamp": "2026-03-05T16:04:55",
+    "type": "break",
+    "planned_duration": 300,
+    "actual_duration": 300,
+    "completed": true
+  },
+  {
+    "timestamp": "2026-03-05T16:26:49",
+    "type": "work",
+    "planned_duration": 600,
+    "actual_duration": 3,
+    "completed": true
+  },
+  {
+    "timestamp": "2026-03-05T16:26:53",
+    "type": "break",
+    "planned_duration": 300,
+    "actual_duration": 1,
+    "completed": true
+  },
+  {
+    "timestamp": "2026-03-05T16:26:55",
+    "type": "work",
+    "planned_duration": 900,
+    "actual_duration": 4,
+    "completed": false
+  },
+  {
+    "timestamp": "2026-03-05T16:26:59",
+    "type": "work",
+    "planned_duration": 300,
+    "actual_duration": 6,
+    "completed": false
   }
 ]

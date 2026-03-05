@@ -1,7 +1,14 @@
 """CLI argument parsing and main dispatch."""
 
 import argparse
+import ctypes
+import ctypes.util
 import sys
+
+# Ensure system libxcb-cursor is loaded before Qt initializes (needed in WSL/PySide6)
+_libxcb_cursor = ctypes.util.find_library("xcb-cursor")
+if _libxcb_cursor:
+    ctypes.CDLL(_libxcb_cursor)
 
 from reverse_pomodoro.log import get_today_stats, reset_progression
 from reverse_pomodoro.session import run_sessions
@@ -56,6 +63,26 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _ensure_qt_platform() -> None:
+    """Set QT_QPA_PLATFORM if xcb-cursor is missing, or exit with helpful message."""
+    import os
+    if sys.platform != "linux":
+        return  # xcb/xcb-cursor is Linux-only; other platforms handle Qt natively
+    if "QT_QPA_PLATFORM" in os.environ:
+        return  # already set by user
+    if ctypes.util.find_library("xcb-cursor"):
+        return  # xcb will work fine
+    # xcb-cursor missing — try wayland
+    if os.environ.get("WAYLAND_DISPLAY"):
+        os.environ["QT_QPA_PLATFORM"] = "wayland"
+        return
+    # No viable GUI platform
+    print("Error: libxcb-cursor0 is required for the GUI but is not installed.")
+    print("  Fix: sudo apt install libxcb-cursor0")
+    print("  Or run in terminal mode: uv run reverse-pomodoro --cli")
+    sys.exit(1)
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -76,5 +103,6 @@ def main(argv: list[str] | None = None) -> None:
     if args.cli:
         run_sessions(args)
     else:
+        _ensure_qt_platform()
         from reverse_pomodoro.gui import PomodoroApp
         PomodoroApp(args).run()

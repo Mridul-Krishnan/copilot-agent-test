@@ -11,6 +11,24 @@ This works because:
 - **Momentum compounds.** Once you're in flow, longer sessions feel natural.
 - **It removes the "all-or-nothing" trap.** Even one 5-minute session is progress.
 
+## Linux Prerequisites
+
+The GUI requires several system X11/xcb libraries (needed by PySide6's Qt xcb platform plugin). This is especially relevant on **WSL** or minimal Linux installs that don't have a full desktop environment.
+
+Install all required libraries in one command:
+
+```bash
+sudo apt install -y libxcb-cursor0 libxcb-icccm4 libxcb-image0 \
+  libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 \
+  libxcb-shape0 libxcb-xinerama0 libxcb-xkb1 libxkbcommon-x11-0
+```
+
+If you'd rather not install GUI dependencies, use CLI mode instead:
+
+```bash
+uv run reverse-pomodoro --cli
+```
+
 ## Installation
 
 ```bash
@@ -34,10 +52,10 @@ uv run reverse-pomodoro
 
 Opens a small floating GUI window. Starts at 5 min work, grows by 5 min each cycle, capped at 50 min. Breaks are 5 min. When a session ends the window maximizes, grabs focus, and blinks to get your attention. Click **▶ Next** to continue.
 
-> **Linux users:** tkinter requires the `python3-tk` system package. If the window doesn't open, run:
+> **Linux/Wayland users:** If `activateWindow` doesn't bring the window to focus, you can force
+> the xcb platform — but first ensure `libxcb-cursor0` is installed (see [Linux Prerequisites](#linux-prerequisites)):
 > ```bash
-> sudo apt install python3-tk   # Debian/Ubuntu
-> sudo dnf install python3-tkinter  # Fedora
+> QT_QPA_PLATFORM=xcb uv run reverse-pomodoro
 > ```
 
 ### Run in terminal (CLI mode)
@@ -95,6 +113,30 @@ uv run reverse-pomodoro --log-file ~/my-pomodoro.json
 | `--reset` | | | Reset progression and exit |
 | `--cli` | | | Run in terminal instead of GUI |
 | `--log-file` | | `./reverse-pomodoro.json` | Path to session log |
+
+## Keyboard Shortcuts
+
+The GUI supports the following keyboard shortcuts while the timer window is focused:
+
+| Key | Action |
+|-----|--------|
+| `+` / `=` | Add 1 minute to the current session's remaining time |
+| `-` | Subtract 1 minute from the current session's remaining time (minimum 1 second) |
+| `R` | Reset the current session — restart from the full planned duration |
+| `N` / `Enter` / `Space` | Advance to the next session (same as clicking **▶ Next**) |
+| `←` / `→` | Move your player left/right in the Dodge mini-game (break sessions only) |
+
+### Break Mini-Game — Dodge!
+
+During break countdowns, a small **Dodge!** mini-game appears inside the timer window:
+
+- A grid of 9 × 10 cells is displayed.
+- Your player (`▲`) starts in the middle of the bottom row.
+- Obstacles (`■`) spawn at the top and fall one row every ~400 ms.
+- Use `←` / `→` to dodge them.
+- Your **score** is the number of obstacles you successfully avoid.
+- On collision the round ends and auto-restarts after 2 seconds.
+- The mini-game hides automatically when a work session starts.
 
 ## Tips
 

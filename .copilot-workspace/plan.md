@@ -1,70 +1,39 @@
-# Plan: GUI Pop-out for Reverse Pomodoro
+# Plan — Reverse Pomodoro GUI Improvements (Revision 2)
 
 ## Problem
-The app only runs in the terminal. The user wants a draggable GUI window that pops up, shows the countdown, and grabs their attention (blinks + maximizes + focuses) when a session ends.
+Three improvements requested to `gui.py`:
+1. **Next keys always work** — N / ↵ / Space should advance to the next session even mid-session.
+2. **No minimise-to-taskbar** — Instead of `showMinimized()`, shrink window to default size.
+3. **Larger default size** — 420×580 to fit the break mini-game.
+4. **Full-reset key** — `Shift+R` resets `_completed` to 0 and restarts from Work #1.
 
-## Approach
-Use **tkinter** (Python stdlib — no new dependencies) to build a `PomodoroApp` GUI class that drives the session loop via `root.after()` (no extra threads needed). The existing CLI path (`session.py`, `timer.py`) is left **untouched**. A `--cli` flag restores the old behaviour.
+## Status After Iteration 1
+Most logic was implemented correctly. Two issues remain from the Reviewer:
 
-## Architecture
-
+### Issue A — Syntax error in `gui.py` line 227 (CRITICAL)
+The Implementer merged two lines into one:
 ```
-cli.py          ← adds --cli flag; routes to gui.py or session.py
-gui.py          ← NEW: tkinter PomodoroApp class
-session.py      ← unchanged (CLI mode)
-timer.py        ← unchanged (CLI mode)
-log.py          ← unchanged (shared by both modes)
+self.resize(420, 580)(self) -> None:
 ```
+This should be two separate things:
+- `self.resize(420, 580)` — last line of `_shrink_to_default`
+- `def _update_display(self) -> None:` — declaration of the next method (currently missing entirely)
 
-## GUI Design
-- Small, always-on-top-ish floating window (~360×180 px), freely draggable
-- Session label: "🍅 Work #N — Xm" or "☕ Break — Xm"
-- Countdown in large text: MM:SS
-- Filled progress bar (Canvas rectangle)
-- On completion:
-  1. Restore & maximize the window (`root.state('normal')` → `root.attributes('-zoomed', True)` on Linux)
-  2. `root.lift()` + `root.focus_force()` + `root.attributes('-topmost', True)`
-  3. Blink loop: alternate window background + label bg between orange and white 8 times (500 ms each) using `root.after()`
-  4. After blink, show "Continue?" prompt — user clicks button to proceed to next session
+The body of `_update_display` (lines 228–232) is present but the method has no `def` declaration, so Python sees it as unreachable code inside `_shrink_to_default`, causing a `SyntaxError`.
 
-## Files to Create/Modify
-
-| File | Action | What changes |
-|------|--------|--------------|
-| `src/reverse_pomodoro/gui.py` | CREATE | `PomodoroApp` tkinter class with full session loop |
-| `src/reverse_pomodoro/cli.py` | MODIFY | Add `--cli` flag; default launches `PomodoroApp` |
-| `pyproject.toml` | MODIFY | No new deps needed (tkinter is stdlib) |
-| `GUIDE.md` | MODIFY | Document the GUI mode and `--cli` flag |
-
-## Key Implementation Details
-
-### `gui.py` — `PomodoroApp`
-- `__init__`: build window, init state variables, call `_start_work()`
-- `_start_work()`: compute duration, update label, schedule `_tick()`
-- `_tick(remaining)`: update countdown + bar; if remaining==0 call `_on_complete()`; else `root.after(1000, _tick, remaining-1)`
-- `_on_complete(session_type)`: log entry, blink, maximize, show "Next" button
-- `_start_break()` / `_next_cycle()`: transition between sessions
-
-### Blink Mechanism
+**Fix:** Replace line 227 with:
 ```python
-def _blink(self, count, colors):
-    if count == 0:
-        self._show_next_button()
-        return
-    color = colors[count % 2]
-    self.root.configure(bg=color)
-    self.root.after(500, self._blink, count - 1, colors)
+        self.resize(420, 580)
+
+    def _update_display(self) -> None:
 ```
 
-### Attention Grab on Complete
-```python
-self.root.attributes('-zoomed', True)   # Linux maximize
-self.root.lift()
-self.root.focus_force()
-self.root.attributes('-topmost', True)
-```
+### Issue B — Test `test_key_n_no_advance_when_disabled` conflicts with new spec
+The old test asserts that pressing N when `_btn_next` is disabled does NOT advance. The new spec (and the already-implemented `keyPressEvent`) removes this guard — N always advances. The test must be updated to assert the new intended behaviour: N advances even when button is disabled.
 
-## Considerations
-- `tkinter` may require `python3-tk` system package on some Linux distros; the Implementer should note this in GUIDE.md
-- Interrupt/Ctrl+C: bind `<Destroy>` or `WM_DELETE_WINDOW` to save a partial log entry
-- Keep `--cli` working exactly as before (no changes to session.py / timer.py)
+**Fix:** Rename the test to `test_key_n_advances_even_when_disabled` and change the final assertion from `assert app._session_type == "work"` to `assert app._session_type == "break"` (plus stop the tick timer after advancing).
+
+## Files Changed
+- `src/reverse_pomodoro/gui.py` — fix line 227 only
+- `tests/test_gui.py` — update `test_key_n_no_advance_when_disabled`
+

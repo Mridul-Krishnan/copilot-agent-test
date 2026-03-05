@@ -1,61 +1,75 @@
-# Tasks
+# Tasks — Revision 2
 
-## Iteration 1 — GUI Pop-out Window
+## Task 1 — Larger default window size [x]
+**File:** `src/reverse_pomodoro/gui.py`
+**Change:** `self.resize(420, 280)` → `self.resize(420, 580)` in `__init__`
+**Acceptance:** Window opens at 420×580, large enough to display the mini-game.
 
-### T1 — Create `src/reverse_pomodoro/gui.py`
-**Description:** Build a `PomodoroApp` tkinter class that drives the full work→break session loop using `root.after()` scheduling. No threads needed.
+## Task 2 — Shrink instead of minimise [x]
+**File:** `src/reverse_pomodoro/gui.py`
+**Change:**
+- Add `_shrink_to_default()`: calls `self.showNormal()` then `self.resize(420, 580)`.
+- Replace both `QTimer.singleShot(100, self.showMinimized)` calls (in `_start_work` and `_start_break`) with `QTimer.singleShot(100, self._shrink_to_default)`.
+**Acceptance:** Starting a session keeps the window on screen at 420×580 instead of minimising to taskbar.
 
-**Acceptance criteria:**
-- Window opens, shows session label + large MM:SS countdown + filled progress bar
-- Timer ticks every second, updating the display
-- On completion: window maximizes, lifts to top, gains focus, blinks (8 × 500 ms, orange ↔ white)
-- After blink: shows a "▶ Next" button to advance to the next session
-- Closing the window mid-session saves a partial log entry
-- All session data is logged to the JSON log file (same format as CLI mode)
+## Task 3 — N / ↵ / Space work at any time [x]
+**File:** `src/reverse_pomodoro/gui.py`
+**Change:**
+- Remove `if self._btn_next.isEnabled():` guard in `keyPressEvent`.
+- In `_advance()`: add guard to stop timers and save partial entry as `completed=False` when called mid-session.
+**Acceptance:** Pressing N/↵/Space skips the current session at any point.
 
-**Affected files:** `src/reverse_pomodoro/gui.py` (new)
+## Task 4 — Full-reset key (Shift+R) [x]
+**File:** `src/reverse_pomodoro/gui.py`
+**Change:**
+- Add `_full_reset()`: saves partial entry, stops timers, sets `self._completed = 0`, calls `_start_work()`.
+- In `keyPressEvent` for `Qt.Key_R`: branch on `Qt.ShiftModifier` → `_full_reset()` vs `_reset_session()`.
+- Update hints text in `_build_ui`, `_start_work`, `_start_break` to include `[Shift+R] full reset`.
+**Acceptance:** Pressing Shift+R at any time resets back to Work #1.
 
-**Status:** [x]
+## Task 5 — Fix syntax error in `_shrink_to_default` / `_update_display` (CRITICAL) [x]
+**File:** `src/reverse_pomodoro/gui.py`
+**Change:** Line 227 currently reads:
+```
+        self.resize(420, 580)(self) -> None:
+```
+Replace with two correct lines:
+```
+        self.resize(420, 580)
 
----
+    def _update_display(self) -> None:
+```
+so that `_shrink_to_default` ends cleanly and `_update_display` is restored as its own method declaration.
+**Acceptance:** `python -c "import reverse_pomodoro.gui"` succeeds; all tests pass.
 
-### T2 — Modify `src/reverse_pomodoro/cli.py`
-**Description:** Add a `--cli` flag. Without it, `main()` calls `PomodoroApp(args).run()`. With `--cli`, calls the existing `run_sessions(args)` as before.
+## Task 6 — Update test for new N-key behaviour [x]
+**File:** `tests/test_gui.py`
+**Change:** Rename `test_key_n_no_advance_when_disabled` → `test_key_n_advances_even_when_disabled`. Change the final assertion from `app._session_type == "work"` to `app._session_type == "break"`, and add `app._tick_timer.stop()` after the key press.
+**Acceptance:** `test_key_n_advances_even_when_disabled` passes; all other tests pass.
 
-**Acceptance criteria:**
-- `uv run reverse-pomodoro` opens the GUI window
-- `uv run reverse-pomodoro --cli` runs in the terminal exactly as before
-- `--stats` and `--reset` still work (exit before any GUI/CLI session loop)
+**File:** `src/reverse_pomodoro/gui.py`
+**Change:** `self.resize(420, 280)` → `self.resize(420, 580)` in `__init__`
+**Acceptance:** Window opens at 420×580, large enough to display the mini-game.
 
-**Affected files:** `src/reverse_pomodoro/cli.py`
+## Task 2 — Shrink instead of minimise [x]
+**File:** `src/reverse_pomodoro/gui.py`
+**Change:**
+- Add `_shrink_to_default()`: calls `self.showNormal()` then `self.resize(420, 580)`.
+- Replace both `QTimer.singleShot(100, self.showMinimized)` calls (in `_start_work` and `_start_break`) with `QTimer.singleShot(100, self._shrink_to_default)`.
+**Acceptance:** Starting a session keeps the window on screen at 420×580 instead of minimising to taskbar.
 
-**Status:** [x]
+## Task 3 — N / ↵ / Space work at any time [x]
+**File:** `src/reverse_pomodoro/gui.py`
+**Change:**
+- Remove `if self._btn_next.isEnabled():` guard in `keyPressEvent`.
+- In `_advance()`: add guard to stop timers and save partial entry as `completed=False` when called mid-session.
+**Acceptance:** Pressing N/↵/Space skips the current session at any point.
 
----
+## Task 4 — Full-reset key (Shift+R) [x]
+**File:** `src/reverse_pomodoro/gui.py`
+**Change:**
+- Add `_full_reset()`: saves partial entry, stops timers, sets `self._completed = 0`, calls `_start_work()`.
+- In `keyPressEvent` for `Qt.Key_R`: branch on `Qt.ShiftModifier` → `_full_reset()` vs `_reset_session()`.
+- Update hints text in `_build_ui`, `_start_work`, `_start_break` to include `[Shift+R] full reset`.
+**Acceptance:** Pressing Shift+R at any time resets back to Work #1.
 
-### T3 — Update `GUIDE.md`
-**Description:** Add a section explaining the GUI mode, the `--cli` fallback, and the `python3-tk` system dependency note for Linux users.
-
-**Acceptance criteria:**
-- GUI mode documented with example command
-- `--cli` flag listed in the All CLI Flags table
-- Note about `sudo apt install python3-tk` (or equivalent) for users who lack tkinter
-
-**Affected files:** `reverse-pomodoro/GUIDE.md`
-
-**Status:** [x]
-
----
-
-### T4 — Smoke-test the GUI
-**Description:** Run the app, confirm the window appears, timer counts down visually, and completion triggers blink + maximize + focus.
-
-**Acceptance criteria:**
-- Window launches without errors
-- Countdown progresses correctly
-- Completion alert is clearly visible (blink + maximize)
-- Existing tests (`uv run pytest`) still pass
-
-**Affected files:** none (verification only)
-
-**Status:** [x] — 18 tests passed
