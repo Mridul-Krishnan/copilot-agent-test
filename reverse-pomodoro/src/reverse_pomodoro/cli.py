@@ -48,6 +48,11 @@ def build_parser() -> argparse.ArgumentParser:
         type=str, default="./reverse-pomodoro.json",
         help="path to log file (default: ./reverse-pomodoro.json)",
     )
+    parser.add_argument(
+        "--cli",
+        action="store_true",
+        help="run in terminal (no GUI window)",
+    )
     return parser
 
 
@@ -68,4 +73,8 @@ def main(argv: list[str] | None = None) -> None:
         print("🔄 Progression reset. Next session starts from the beginning.")
         sys.exit(0)
 
-    run_sessions(args)
+    if args.cli:
+        run_sessions(args)
+    else:
+        from reverse_pomodoro.gui import PomodoroApp
+        PomodoroApp(args).run()

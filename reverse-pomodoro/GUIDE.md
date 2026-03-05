@@ -26,13 +26,27 @@ reverse-pomodoro
 
 ## Usage
 
-### Start a session (defaults)
+### Start a session (defaults — GUI mode)
 
 ```bash
 uv run reverse-pomodoro
 ```
 
-Starts at 5 min work, grows by 5 min each cycle, capped at 50 min. Breaks are 5 min.
+Opens a small floating GUI window. Starts at 5 min work, grows by 5 min each cycle, capped at 50 min. Breaks are 5 min. When a session ends the window maximizes, grabs focus, and blinks to get your attention. Click **▶ Next** to continue.
+
+> **Linux users:** tkinter requires the `python3-tk` system package. If the window doesn't open, run:
+> ```bash
+> sudo apt install python3-tk   # Debian/Ubuntu
+> sudo dnf install python3-tkinter  # Fedora
+> ```
+
+### Run in terminal (CLI mode)
+
+```bash
+uv run reverse-pomodoro --cli
+```
+
+Falls back to the original terminal countdown — no window needed.
 
 ### Customize durations
 
@@ -79,6 +93,7 @@ uv run reverse-pomodoro --log-file ~/my-pomodoro.json
 | `--break-duration` | `-b` | 5 | Break duration (minutes) |
 | `--stats` | | | Show today's stats and exit |
 | `--reset` | | | Reset progression and exit |
+| `--cli` | | | Run in terminal instead of GUI |
 | `--log-file` | | `./reverse-pomodoro.json` | Path to session log |
 
 ## Tips
