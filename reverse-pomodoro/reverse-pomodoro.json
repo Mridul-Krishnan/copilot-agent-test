@@ -180,5 +180,54 @@
     "planned_duration": 300,
     "actual_duration": 6,
     "completed": false
+  },
+  {
+    "timestamp": "2026-03-06T10:47:01",
+    "type": "work",
+    "planned_duration": 2100,
+    "actual_duration": 11,
+    "completed": false
+  },
+  {
+    "timestamp": "2026-03-06T10:47:12",
+    "type": "work",
+    "planned_duration": 300,
+    "actual_duration": 1,
+    "completed": false
+  },
+  {
+    "timestamp": "2026-03-06T10:47:14",
+    "type": "work",
+    "planned_duration": 300,
+    "actual_duration": 0,
+    "completed": false
+  },
+  {
+    "timestamp": "2026-03-06T10:47:14",
+    "type": "work",
+    "planned_duration": 300,
+    "actual_duration": 0,
+    "completed": false
+  },
+  {
+    "timestamp": "2026-03-06T10:47:15",
+    "type": "work",
+    "planned_duration": 300,
+    "actual_duration": 0,
+    "completed": false
+  },
+  {
+    "timestamp": "2026-03-06T10:47:15",
+    "type": "work",
+    "planned_duration": 300,
+    "actual_duration": 5,
+    "completed": false
+  },
+  {
+    "timestamp": "2026-03-06T14:50:00",
+    "type": "work",
+    "planned_duration": 2100,
+    "actual_duration": 4,
+    "completed": false
   }
 ]
