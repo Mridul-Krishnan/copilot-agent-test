@@ -430,3 +430,70 @@ def test_hints_label_break(app):
     app._minigame.stop()
     text = app._label_hints.text()
     assert "[←/→]" in text
+
+
+# ------------------------------------------------------------------
+# Theme cycling
+# ------------------------------------------------------------------
+
+def test_theme_total_count():
+    from reverse_pomodoro.gui import THEMES
+    assert len(THEMES) == 3
+
+
+def test_theme_cycle_changes_theme(app):
+    from PySide6.QtCore import Qt, QEvent
+    from PySide6.QtGui import QKeyEvent
+
+    assert app._theme_idx == 0
+    evt = QKeyEvent(QEvent.KeyPress, Qt.Key_T, Qt.NoModifier)
+    app.keyPressEvent(evt)
+    assert app._theme_idx == 1
+
+
+def test_theme_cycle_wraps(app):
+    from PySide6.QtCore import Qt, QEvent
+    from PySide6.QtGui import QKeyEvent
+    from reverse_pomodoro.gui import THEMES
+
+    for _ in range(len(THEMES)):
+        evt = QKeyEvent(QEvent.KeyPress, Qt.Key_T, Qt.NoModifier)
+        app.keyPressEvent(evt)
+    assert app._theme_idx == 0
+
+
+# ------------------------------------------------------------------
+# Theme — accent colours and minigame colour wiring
+# ------------------------------------------------------------------
+
+def test_solarized_work_accent_is_violet():
+    from reverse_pomodoro.gui import THEME_SOLARIZED
+    assert THEME_SOLARIZED.work_accent == "#6c71c4"
+
+
+def test_solarized_break_accent_unchanged():
+    from reverse_pomodoro.gui import THEME_SOLARIZED
+    assert THEME_SOLARIZED.break_accent == "#268bd2"
+
+
+def test_minigame_colors_updated_on_break_start(qapp, tmp_path):
+    from unittest.mock import patch
+    from reverse_pomodoro.gui import PomodoroApp
+
+    log_file = str(tmp_path / "log.json")
+    a = PomodoroApp(_make_args(log_file=log_file))
+    a._tick_timer.stop()
+
+    with patch.object(a._minigame, "set_colors") as mock_sc:
+        a._start_break()
+        a._tick_timer.stop()
+        a._minigame.stop()
+        mock_sc.assert_called_once()
+
+
+def test_minigame_colors_updated_on_theme_cycle(app):
+    from unittest.mock import patch
+
+    with patch.object(app._minigame, "set_colors") as mock_sc:
+        app._cycle_theme()
+        mock_sc.assert_called_once()

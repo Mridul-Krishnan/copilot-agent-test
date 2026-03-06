@@ -122,3 +122,18 @@ def test_start_resets_state(game):
     assert game._game_over is False
     assert game._tick_timer.isActive()
     game.stop()
+
+
+# ------------------------------------------------------------------
+# set_colors
+# ------------------------------------------------------------------
+
+def test_set_colors_updates_attributes(game):
+    from PySide6.QtGui import QColor
+
+    game.set_colors("#aabbcc", "#112233", "#445566", "#778899")
+
+    assert game._color_bg == QColor("#aabbcc")
+    assert game._color_player == QColor("#112233")
+    assert game._color_obstacle == QColor("#445566")
+    assert game._color_text == QColor("#778899")

@@ -2,6 +2,7 @@
 
 import sys
 import time
+from dataclasses import dataclass
 from datetime import datetime
 
 from PySide6.QtCore import Qt, QTimer
@@ -23,11 +24,49 @@ from reverse_pomodoro.log import (
     load_log,
 )
 
-_BG = "#12121f"
-_WORK_ACCENT = "#ff6b35"
-_BREAK_ACCENT = "#00b4d8"
-_TEXT = "#e0e0e0"
 _BLINK_STEPS = 16  # 8 pairs × 2
+
+
+@dataclass
+class Theme:
+    name: str
+    bg: str
+    work_accent: str
+    break_accent: str
+    text: str
+    progress_bg: str
+    minigame_bg: str
+
+
+THEME_DARK = Theme(
+    name="dark",
+    bg="#12121f",
+    work_accent="#ff6b35",
+    break_accent="#00b4d8",
+    text="#e0e0e0",
+    progress_bg="#2a2a3d",
+    minigame_bg="#1a1a2e",
+)
+THEME_SOLARIZED = Theme(
+    name="solarized",
+    bg="#002b36",
+    work_accent="#6c71c4",
+    break_accent="#268bd2",
+    text="#839496",
+    progress_bg="#073642",
+    minigame_bg="#073642",
+)
+THEME_FOREST = Theme(
+    name="forest",
+    bg="#1a2e1a",
+    work_accent="#a8d5a2",
+    break_accent="#69b578",
+    text="#d4edda",
+    progress_bg="#2d472d",
+    minigame_bg="#1a2e1a",
+)
+
+THEMES: list[Theme] = [THEME_DARK, THEME_SOLARIZED, THEME_FOREST]
 
 
 _BASE_STYLESHEET = """
@@ -45,7 +84,7 @@ QLabel#countdown {{
     font-weight: bold;
 }}
 QProgressBar {{
-    background-color: #2a2a3d;
+    background-color: {progress_bg};
     border: none;
     border-radius: 5px;
     height: 14px;
@@ -74,10 +113,10 @@ QLabel#hints {{
 """
 
 
-def _make_stylesheet(bg: str, accent: str) -> str:
+def _make_stylesheet(bg: str, accent: str, text: str, progress_bg: str) -> str:
     # darken accent slightly for hover
     return _BASE_STYLESHEET.format(
-        bg=bg, text=_TEXT, accent=accent, accent_hover=accent
+        bg=bg, text=text, accent=accent, accent_hover=accent, progress_bg=progress_bg,
     )
 
 
@@ -101,11 +140,14 @@ class PomodoroApp(QMainWindow):
         self._tick_timer.timeout.connect(self._on_tick)
         self._remaining: int = 0
 
+        self._theme_idx: int = 0
+        self._current_theme: Theme = THEMES[0]
+
         self._blink_timer = QTimer(self)
         self._blink_timer.setInterval(500)
         self._blink_timer.timeout.connect(self._on_blink)
         self._blink_count: int = 0
-        self._blink_accent: str = _WORK_ACCENT
+        self._blink_accent: str = self._current_theme.work_accent
 
         self._build_ui()
         self.setWindowTitle("Reverse Pomodoro")
@@ -149,18 +191,19 @@ class PomodoroApp(QMainWindow):
         self._btn_next.clicked.connect(self._advance)
         layout.addWidget(self._btn_next)
 
-        self._label_hints = QLabel("[+/-] time  [R] reset  [Shift+R] full reset  [N/↵] next")
+        self._label_hints = QLabel("[+/-] time  [R] reset  [Shift+R] full reset  [N/↵] next  [T] theme")
         self._label_hints.setObjectName("hints")
         layout.addWidget(self._label_hints)
 
-        self._set_accent(_WORK_ACCENT)
+        self._set_accent(self._current_theme.work_accent)
 
     def _set_accent(self, accent: str) -> None:
-        self.setStyleSheet(_make_stylesheet(_BG, accent))
+        t = self._current_theme
+        self.setStyleSheet(_make_stylesheet(t.bg, accent, t.text, t.progress_bg))
 
     def _set_bg(self, bg: str) -> None:
-        accent = self._blink_accent
-        self.setStyleSheet(_make_stylesheet(bg, accent))
+        t = self._current_theme
+        self.setStyleSheet(_make_stylesheet(bg, self._blink_accent, t.text, t.progress_bg))
 
     # ------------------------------------------------------------------
     # Session logic
@@ -174,14 +217,14 @@ class PomodoroApp(QMainWindow):
         return mins * 60
 
     def _start_work(self) -> None:
-        self._blink_accent = _WORK_ACCENT
-        self._set_accent(_WORK_ACCENT)
+        self._blink_accent = self._current_theme.work_accent
+        self._set_accent(self._current_theme.work_accent)
         self._btn_next.hide()
         self._btn_next.setEnabled(False)
 
         self._minigame.stop()
         self._minigame.hide()
-        self._label_hints.setText("[+/-] time  [R] reset  [Shift+R] full reset  [N/↵] next")
+        self._label_hints.setText("[+/-] time  [R] reset  [Shift+R] full reset  [N/↵] next  [T] theme")
 
         self._total_secs = self._calc_work_secs()
         work_mins = self._total_secs // 60
@@ -198,15 +241,20 @@ class PomodoroApp(QMainWindow):
         self._tick_timer.start()
         QTimer.singleShot(100, self._shrink_to_default)
 
+    def _apply_minigame_theme(self) -> None:
+        t = self._current_theme
+        self._minigame.set_colors(t.minigame_bg, t.break_accent, t.work_accent, t.text)
+
     def _start_break(self) -> None:
-        self._blink_accent = _BREAK_ACCENT
-        self._set_accent(_BREAK_ACCENT)
+        self._blink_accent = self._current_theme.break_accent
+        self._set_accent(self._current_theme.break_accent)
         self._btn_next.hide()
         self._btn_next.setEnabled(False)
 
         self._minigame.show()
+        self._apply_minigame_theme()
         self._minigame.start()
-        self._label_hints.setText("[←/→] dodge  [+/-] time  [R] reset  [Shift+R] full reset  [N/↵] next")
+        self._label_hints.setText("[←/→] dodge  [+/-] time  [R] reset  [Shift+R] full reset  [N/↵] next  [T] theme")
 
         self._total_secs = self.args.break_duration * 60
         self._label_session.setText(f"☕ Break — {self.args.break_duration}m")
@@ -282,7 +330,7 @@ class PomodoroApp(QMainWindow):
         if self._blink_count % 2 == 0:
             self._set_bg(self._blink_accent)
         else:
-            self._set_bg(_BG)
+            self._set_bg(self._current_theme.bg)
         self._blink_count -= 1
 
     def _advance(self) -> None:
@@ -327,6 +375,18 @@ class PomodoroApp(QMainWindow):
         self._completed = 0
         self._start_work()
 
+    def _cycle_theme(self) -> None:
+        self._theme_idx = (self._theme_idx + 1) % len(THEMES)
+        self._current_theme = THEMES[self._theme_idx]
+        accent = (
+            self._current_theme.break_accent
+            if self._session_type == "break"
+            else self._current_theme.work_accent
+        )
+        self._blink_accent = accent
+        self._set_accent(accent)
+        self._apply_minigame_theme()
+
     def keyPressEvent(self, event) -> None:  # noqa: N802
         key = event.key()
         if key in (Qt.Key_Plus, Qt.Key_Equal):
@@ -344,6 +404,8 @@ class PomodoroApp(QMainWindow):
                 self._reset_session()
         elif key in (Qt.Key_N, Qt.Key_Return, Qt.Key_Enter, Qt.Key_Space):
             self._advance()
+        elif key == Qt.Key_T:
+            self._cycle_theme()
         elif key == Qt.Key_Left:
             if self._session_type == "break":
                 self._minigame.move_left()

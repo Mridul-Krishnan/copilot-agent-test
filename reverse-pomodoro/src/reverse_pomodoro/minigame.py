@@ -25,6 +25,11 @@ class DodgeGame(QWidget):
         self.setFixedSize(_COLS * _CELL, _ROWS * _CELL + 30)
         self.setFocusPolicy(Qt.StrongFocus)
 
+        self._color_bg = QColor(_COLOR_BG)
+        self._color_player = QColor(_COLOR_PLAYER)
+        self._color_obstacle = QColor(_COLOR_OBSTACLE)
+        self._color_text = QColor(_COLOR_TEXT)
+
         self._player_col: int = _COLS // 2
         self._obstacles: list[tuple[int, int]] = []  # (row, col)
         self._score: int = 0
@@ -59,6 +64,13 @@ class DodgeGame(QWidget):
         if not self._game_over and self._player_col < _COLS - 1:
             self._player_col += 1
             self.update()
+
+    def set_colors(self, bg: str, player: str, obstacle: str, text: str) -> None:
+        self._color_bg = QColor(bg)
+        self._color_player = QColor(player)
+        self._color_obstacle = QColor(obstacle)
+        self._color_text = QColor(text)
+        self.update()
 
     # ------------------------------------------------------------------
     # Internal logic
@@ -112,10 +124,10 @@ class DodgeGame(QWidget):
         painter.setRenderHint(QPainter.Antialiasing, False)
 
         # Background
-        painter.fillRect(self.rect(), _COLOR_BG)
+        painter.fillRect(self.rect(), self._color_bg)
 
         if self._game_over:
-            painter.setPen(_COLOR_TEXT)
+            painter.setPen(self._color_text)
             font = painter.font()
             font.setPointSize(14)
             font.setBold(True)
@@ -130,10 +142,10 @@ class DodgeGame(QWidget):
         # Draw player
         px = self._player_col * _CELL
         py = (_ROWS - 1) * _CELL
-        painter.fillRect(px + 4, py + 4, _CELL - 8, _CELL - 8, _COLOR_PLAYER)
+        painter.fillRect(px + 4, py + 4, _CELL - 8, _CELL - 8, self._color_player)
 
         # Draw player glyph
-        painter.setPen(_COLOR_BG)
+        painter.setPen(self._color_bg)
         font = painter.font()
         font.setPointSize(10)
         painter.setFont(font)
@@ -144,10 +156,10 @@ class DodgeGame(QWidget):
         for row, col in self._obstacles:
             ox = col * _CELL
             oy = row * _CELL
-            painter.fillRect(ox + 4, oy + 4, _CELL - 8, _CELL - 8, _COLOR_OBSTACLE)
+            painter.fillRect(ox + 4, oy + 4, _CELL - 8, _CELL - 8, self._color_obstacle)
 
         # Score label at bottom
-        painter.setPen(_COLOR_TEXT)
+        painter.setPen(self._color_text)
         font = painter.font()
         font.setPointSize(9)
         painter.setFont(font)

@@ -229,5 +229,187 @@
     "planned_duration": 2100,
     "actual_duration": 4,
     "completed": false
+  },
+  {
+    "timestamp": "2026-03-06T15:52:56",
+    "type": "work",
+    "planned_duration": 2100,
+    "actual_duration": 7,
+    "completed": false
+  },
+  {
+    "timestamp": "2026-03-06T15:53:09",
+    "type": "work",
+    "planned_duration": 300,
+    "actual_duration": 4,
+    "completed": true
+  },
+  {
+    "timestamp": "2026-03-06T15:53:15",
+    "type": "work",
+    "planned_duration": 300,
+    "actual_duration": 4,
+    "completed": true
+  },
+  {
+    "timestamp": "2026-03-06T15:53:22",
+    "type": "work",
+    "planned_duration": 300,
+    "actual_duration": 4,
+    "completed": true
+  },
+  {
+    "timestamp": "2026-03-06T15:53:23",
+    "type": "break",
+    "planned_duration": 300,
+    "actual_duration": 3,
+    "completed": false
+  },
+  {
+    "timestamp": "2026-03-06T15:53:32",
+    "type": "work",
+    "planned_duration": 600,
+    "actual_duration": 5,
+    "completed": true
+  },
+  {
+    "timestamp": "2026-03-06T15:53:35",
+    "type": "break",
+    "planned_duration": 300,
+    "actual_duration": 1,
+    "completed": true
+  },
+  {
+    "timestamp": "2026-03-06T15:53:36",
+    "type": "work",
+    "planned_duration": 300,
+    "actual_duration": 20,
+    "completed": false
+  },
+  {
+    "timestamp": "2026-03-06T16:06:48",
+    "type": "work",
+    "planned_duration": 3000,
+    "actual_duration": 9,
+    "completed": false
+  },
+  {
+    "timestamp": "2026-03-06T16:07:06",
+    "type": "work",
+    "planned_duration": 300,
+    "actual_duration": 8,
+    "completed": true
+  },
+  {
+    "timestamp": "2026-03-06T16:07:17",
+    "type": "break",
+    "planned_duration": 300,
+    "actual_duration": 4,
+    "completed": false
+  },
+  {
+    "timestamp": "2026-03-06T16:07:25",
+    "type": "work",
+    "planned_duration": 600,
+    "actual_duration": 4,
+    "completed": true
+  },
+  {
+    "timestamp": "2026-03-06T16:08:15",
+    "type": "work",
+    "planned_duration": 3000,
+    "actual_duration": 1,
+    "completed": false
+  },
+  {
+    "timestamp": "2026-03-06T16:08:20",
+    "type": "work",
+    "planned_duration": 300,
+    "actual_duration": 4,
+    "completed": true
+  },
+  {
+    "timestamp": "2026-03-06T16:08:21",
+    "type": "break",
+    "planned_duration": 300,
+    "actual_duration": 3,
+    "completed": false
+  },
+  {
+    "timestamp": "2026-03-06T16:11:44",
+    "type": "work",
+    "planned_duration": 3000,
+    "actual_duration": 5,
+    "completed": false
+  },
+  {
+    "timestamp": "2026-03-06T16:11:49",
+    "type": "work",
+    "planned_duration": 300,
+    "actual_duration": 8,
+    "completed": false
+  },
+  {
+    "timestamp": "2026-03-06T16:14:58",
+    "type": "break",
+    "planned_duration": 300,
+    "actual_duration": 179,
+    "completed": true
+  },
+  {
+    "timestamp": "2026-03-06T16:20:11",
+    "type": "work",
+    "planned_duration": 3000,
+    "actual_duration": 3,
+    "completed": false
+  },
+  {
+    "timestamp": "2026-03-06T16:20:19",
+    "type": "work",
+    "planned_duration": 300,
+    "actual_duration": 4,
+    "completed": true
+  },
+  {
+    "timestamp": "2026-03-06T16:20:25",
+    "type": "break",
+    "planned_duration": 300,
+    "actual_duration": 3,
+    "completed": true
+  },
+  {
+    "timestamp": "2026-03-06T16:20:33",
+    "type": "work",
+    "planned_duration": 600,
+    "actual_duration": 6,
+    "completed": true
+  },
+  {
+    "timestamp": "2026-03-06T16:20:34",
+    "type": "break",
+    "planned_duration": 300,
+    "actual_duration": 4,
+    "completed": false
+  },
+  {
+    "timestamp": "2026-03-06T16:20:38",
+    "type": "work",
+    "planned_duration": 900,
+    "actual_duration": 3,
+    "completed": false
+  },
+  {
+    "timestamp": "2026-03-06T16:20:55",
+    "type": "break",
+    "planned_duration": 300,
+    "actual_duration": 13,
+    "completed": true
+  },
+  {
+    "timestamp": "2026-03-06T16:20:57",
+    "type": "work",
+    "planned_duration": 900,
+    "actual_duration": 3,
+    "completed": false
   }
 ]
